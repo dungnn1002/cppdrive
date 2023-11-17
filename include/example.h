@@ -14,8 +14,7 @@ class Dummy {
     /**
      * Here is how to comment a function.
      * @param name you can use @ param to demonstrate what a function takes as a parameter.
-     * @return You can use @ return to demonstrate what a function returns. Here, we return nothing
-     *  because `void`.
+     * @return 1 if successful, 0 otherwise.
      */
-    void sayHelloTo(std::string name);
+    bool sayHelloTo(std::string name);
 };
