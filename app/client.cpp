@@ -9,12 +9,50 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define BUFF_SIZE 1024
+#include "protocol.h"
 
-bool is_valid_ipv4_address(const char *str) {
-    struct in_addr addr;
-    return inet_pton(AF_INET, str, &addr) == 1;
-}
+int client_sock;
+bool isAuthen = false;
+Message *mess;
+char current_usr[255];
+
+/**
+ * @brief Checks if the given string is a valid IP address.
+ *
+ * @param str The string to be checked.
+ * @return true if the string is a valid IP address, false otherwise.
+ */
+bool validIPAddress(const char *str);
+
+/**
+ *  @brief authentication menu of application: login, register, exit
+ *  @return void
+ */
+void printAuthenMenu();
+
+/**
+ *  @brief main menu of application: download, upload file, etc...
+ *  @return void
+ */
+void printMainMenu();
+
+/**
+ * @brief get login information from user: username and password then save it to `msg->payload`
+ * @brief also save username to `str`
+ * @param str: username
+ * @return void
+ */
+void getLoginInfo(char *str);
+
+/**
+ * @brief Performs the login functionality.
+ *
+ * This function prompts the user for a username, sends it to the server for authentication,
+ * and updates the current_user variable with the authenticated username.
+ *
+ * @param current_user A pointer to a character array to store the authenticated username.
+ */
+void loginFunc(char *current_user);
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
@@ -24,7 +62,7 @@ int main(int argc, char *argv[]) {
 
     // check if the IP address is valid
     char *SERV_IP = argv[1];
-    if (!is_valid_ipv4_address(SERV_IP)) {
+    if (!validIPAddress(SERV_IP)) {
         fprintf(stderr, "Error: invalid IP address\n");
         return EXIT_FAILURE;
     }
@@ -38,10 +76,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    char buff[BUFF_SIZE + 1];
-    int client_sock;
     struct sockaddr_in server_addr; /* server's address information */
-    int msg_len, bytes_sent, bytes_received;
 
     // Step 1: Construct socket
     if ((client_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -63,51 +98,98 @@ int main(int argc, char *argv[]) {
     }
 
     // Step 4: Communicate with server
+    char choose;
+    mess = (Message *) malloc(sizeof(Message));
     while (true) {
-        // Send message
-        printf("\nInsert string to send:");
-        if (fgets(buff, BUFF_SIZE, stdin) == NULL) {
-            perror("\nError reading input");
-            break;
-        }
-        msg_len = strlen(buff);
-        if (msg_len == 0)
-            break;
+        if (!isAuthen) {
+            printAuthenMenu();
+            scanf(" %c", &choose);
+            while (getchar() != '\n')
+                ;
+            switch (choose) {
+                case '1':
+                    loginFunc(current_usr);
+                    break;
+            }
 
-        bytes_sent = send(client_sock, buff, msg_len, 0);
-        if (bytes_sent == -1) {
-            perror("\nError sending data");
-            break;
-        }
-
-        // Receive echo reply
-        bytes_received = recv(client_sock, buff, BUFF_SIZE, 0);
-        if (bytes_received == -1) {
-            perror("\nError receiving data");
-            break;
-        } else if (bytes_received == 0) {
-            printf("Connection closed.\n");
-            break;
-        }
-
-        buff[bytes_received] = '\0';
-        int status = 100;
-        printf("Reply from server: %s\n", buff);
-        if (strcmp(buff, "enter password: ") != 0) {
-            status = atoi(buff);
-        }
-        if (status == 1) {
-            printf("Login successful. Access granted.\n");
-            break;
-        } else if (status == -1) {
-            printf("Invalid username or password. Please try again.\n");
-        } else if (status == 0) {
-            printf("Account is blocked. Please contact the administrator.\n");
-            break;
+        } else {
+            printf("Hello %s\n", current_usr);
+            printMainMenu();
+            scanf(" %c", &choose);
+            while (getchar() != '\n')
+                ;
+            switch (choose) {
+                case '1':
+                    printf("Upload file\n");
+                    break;
+                case '2':
+                    printf("Download file\n");
+                    break;
+                case '3':
+                    printf("Rename file\n");
+                    break;
+                case '7':
+                    isAuthen = false;
+                    break;
+            }
         }
     }
-
     // Step 5: Close socket
     close(client_sock);
     return EXIT_SUCCESS;
+}
+
+bool validIPAddress(const char *str) {
+    struct in_addr addr;
+    return inet_pton(AF_INET, str, &addr) == 1;
+}
+
+void printAuthenMenu() {
+    printf("\n------------------CPP DRIVE------------------\n");
+    printf("\n1 - Login");
+    printf("\n2 - Register");
+    printf("\n3 - Exit");
+    printf("\nChoose: ");
+}
+
+void printMainMenu() {
+    printf("\n------------------Menu------------------\n");
+    printf("\n1 - Upload file");
+    printf("\n2 - Download File");
+    printf("\n3 - Rename File");
+    printf("\n4 - Change directory File");
+    printf("\n5 - Open folder");
+    printf("\n6 - Create folder");
+    printf("\n7 - Logout");
+    printf("\nPlease choose: ");
+}
+
+void getLoginInfo(char *str) {
+    char username[255];
+    char password[255];
+    printf("Enter username: ");
+    scanf("%[^\n]s", username);
+    while (getchar() != '\n')
+        ;
+    printf("Enter password: ");
+    scanf("%[^\n]s", password);
+    while (getchar() != '\n')
+        ;
+    sprintf(mess->payload, "LOGIN\nUSER %s\nPASS %s", username, password);
+    strcpy(str, username);
+}
+
+void loginFunc(char *current_user) {
+    char username[255];
+    mess->type = TYPE_AUTHENTICATE;
+    getLoginInfo(username);
+    strcpy(current_user, username);
+    mess->length = strlen(mess->payload);
+    sendMessage(client_sock, *mess);
+    receiveMessage(client_sock, mess);
+    if (mess->type != TYPE_ERROR) {
+        isAuthen = true;
+    } else {
+        printf("Login failed\n");
+    }
 }

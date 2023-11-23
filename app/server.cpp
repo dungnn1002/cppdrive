@@ -10,7 +10,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <experimental/filesystem>
+
 #include "account.h"
+#include "protocol.h"
+#include "status.h"
+#include "utils.h"
 
 #define BACKLOG  20 /* Number of allowed connections */
 #define FILENAME "../account.txt"
@@ -19,6 +24,33 @@ Account account_list = NULL;
 
 /* Receive and echo message to client */
 void echo(int);
+
+/**
+ * @brief handle request message, extract operation from payload and call handle function
+ * @param Message mess, int connSock
+ * @return void
+ */
+void handleAuthenticateRequest(Message mess, int connSock);
+
+/**
+ * @brief handle login request
+ * @param Message mess, int connSock
+ * @return void
+ */
+void handleLogin(Message mess, int connSock);
+
+/*
+ * count number element in array with unknown size
+ * @param temp[][]
+ * @return size of array
+ */
+int numberElementsInArray(char **temp) {
+    int i;
+    for (i = 0; *(temp + i); i++) {
+        // count number elements in array
+    }
+    return i;
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -81,72 +113,82 @@ int main(int argc, char *argv[]) {
 }
 
 void echo(int connfd) {
-    int bytes_sent, bytes_received;
-    char buff[MAX_CHARS + 1];
-    char username[MAX_CHARS + 1];
-    char password[MAX_CHARS + 1];
-    int status = USERNAME_REQUIRED;
+    Message msg;
     while (true) {
-        bytes_received = recv(connfd, buff, MAX_CHARS, 0);   // blocking
-        if (bytes_received == -1) {
-            perror("\nError: ");
-            break;
-        } else if (bytes_received == 0) {
+        int byte_received;
+        byte_received = receiveMessage(connfd, &msg);
+        if (byte_received <= 0) {
             printf("Connection closed.\n");
             break;
         }
-        buff[bytes_received - 1] = '\0';
-        printf("Received from client: %s\n", buff);
-        switch (status) {
-            case USERNAME_REQUIRED: {
-                if (strcmp(buff, "") == 0) {
-                    strcpy(buff, "goodbye!");
-                    memset(username, '\0', sizeof(username));
-                } else {
-                    strcpy(username, buff);
-                    strcpy(buff, "enter password: ");
-                    status = PASSWORD_REQUIRED;
-                }
+        switch (msg.type) {
+            case TYPE_AUTHENTICATE:
+                handleAuthenticateRequest(msg, connfd);
                 break;
-            }
-            case PASSWORD_REQUIRED: {
-                strcpy(password, buff);
-                status = process_login(account_list, username, password);
-                switch (status) {
-                    case USERNAME_REQUIRED: {
-                        strcpy(buff, "-1");
-                        memset(username, '\0', sizeof(username));
-                        memset(password, '\0', sizeof(password));
-                        break;
-                    }
-                    case VALID_CREDENTIALS: {
-                        strcpy(buff, "1");
-                        break;
-                    }
-                    case WRONG_PASSWORD: {
-                        strcpy(buff, "-1");
-                        status = USERNAME_REQUIRED;
-                        memset(username, '\0', sizeof(username));
-                        memset(password, '\0', sizeof(password));
-                        break;
-                    }
-                    case ACCOUNT_NOT_ACTIVE: {
-                        strcpy(buff, "0");
-                        status = USERNAME_REQUIRED;
-                        memset(username, '\0', sizeof(username));
-                        memset(password, '\0', sizeof(password));
-                        break;
-                    }
-                }
+            default:
                 break;
-            }
-        }
-
-        bytes_sent = send(connfd, buff, strlen(buff), 0); /* reply to client with proper messages */
-        if (bytes_sent == -1) {
-            perror("\nError: ");
-            break;
         }
     }
     close(connfd);
+}
+
+void handleAuthenticateRequest(Message mess, int connSock) {
+    char *operation;
+    char temp[PAYLOAD_SIZE];
+    strcpy(temp, mess.payload);
+    operation = str_split(temp, '\n')[0];
+    if (!strcmp(operation, "LOGIN")) {
+        handleLogin(mess, connSock);
+    } else if (!strcmp(operation, "LOGOUT")) {
+    } else if (!strcmp(operation, "REGISTER")) {
+    }
+}
+
+void handleLogin(Message mess, int connSock) {
+    StatusCode status;
+    char **temp = str_split(mess.payload,
+                            '\n');   // handle payload, divide payload to array string split by '\n'
+    if (numberElementsInArray(temp) == 3) {
+        char **userStr = str_split(temp[1], ' ');   // get username
+        char **passStr = str_split(temp[2], ' ');   // get password
+        if ((numberElementsInArray(userStr) == 2) &&
+            (numberElementsInArray(passStr) ==
+             2)) {   // check payload structure valid with two parameters
+            if (!(strcmp(userStr[0], COMMAND_USER) ||
+                  strcmp(
+                      passStr[0],
+                      COMMAND_PASSWORD))) {   // check payload structure valid with two parameters
+                char username[30];
+                char password[20];
+                strcpy(username, userStr[1]);
+                strcpy(password, passStr[1]);
+                int fl = process_login(account_list, username, password);
+                if (fl != VALID_CREDENTIALS) {
+                    mess.type = TYPE_ERROR;
+                    status = USERNAME_OR_PASSWORD_INVALID;
+                } else {
+                    mess.type = TYPE_OK;
+                    // createFolder(username);
+                }
+
+            } else {
+                status = COMMAND_INVALID;
+                mess.type = TYPE_ERROR;
+            }
+        } else {
+            status = COMMAND_INVALID;
+            mess.type = TYPE_ERROR;
+        }
+    } else {
+        mess.type = TYPE_ERROR;
+        status = COMMAND_INVALID;
+        printf("Fails on handle Login!!");
+    }
+    Message *msg = (Message *) malloc(sizeof(Message));
+    msg->type = mess.type;
+    msg->requestId = mess.requestId;
+    sprintf(msg->payload, "%d: %s", status, statusToString(status).c_str());
+    printf("%s\n", msg->payload);
+    msg->length = strlen(msg->payload);
+    sendMessage(connSock, *msg);
 }

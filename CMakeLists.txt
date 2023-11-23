@@ -32,8 +32,10 @@ find_lto(CXX)
 #                         Locate files (change as needed).
 # --------------------------------------------------------------------------------
 set(SOURCES          # All .cpp files in src/
-    src/example.cpp
     src/account.cpp
+    src/protocol.cpp
+    src/utils.cpp
+    src/status.cpp
 )
 
 set(LIBRARY_NAME engine)  # Default name for the library built from src/*.cpp (change if you wish)
