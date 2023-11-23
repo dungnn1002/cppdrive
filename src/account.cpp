@@ -53,7 +53,7 @@ int process_login(Account account_list, char *username, char *password) {
         if (strcmp(tmp->username, username) == 0) {
             if (strcmp(tmp->password, password) == 0) {
                 if (strcmp(tmp->is_active, "active") == 0) {
-                    printf("%s",tmp->is_active);
+                    printf("%s", tmp->is_active);
                     return VALID_CREDENTIALS;   // valid credentials
                 } else {
                     return ACCOUNT_NOT_ACTIVE;   // credentials correct but account is not active
