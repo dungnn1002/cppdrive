@@ -10,7 +10,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
+#include <string>
 
 #include "account.h"
 #include "protocol.h"
@@ -38,6 +39,8 @@ void handleAuthenticateRequest(Message mess, int connSock);
  * @return void
  */
 void handleLogin(Message mess, int connSock);
+
+void handleUploadFile(Message mess, int connSock);
 
 /*
  * count number element in array with unknown size
@@ -125,6 +128,9 @@ void echo(int connfd) {
             case TYPE_AUTHENTICATE:
                 handleAuthenticateRequest(msg, connfd);
                 break;
+            case TYPE_UPLOAD_FILE:
+                // handleUploadFile(msg, connfd);
+                break;
             default:
                 break;
         }
@@ -168,7 +174,7 @@ void handleLogin(Message mess, int connSock) {
                     status = USERNAME_OR_PASSWORD_INVALID;
                 } else {
                     mess.type = TYPE_OK;
-                    // createFolder(username);
+                    createFolder(username);
                 }
 
             } else {

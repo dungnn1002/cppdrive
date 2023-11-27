@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <filesystem>
+#include <string>
+
 char** str_split(char* a_str, const char a_delim) {
     char** result = 0;
     size_t count = 0;
@@ -47,4 +50,12 @@ char** str_split(char* a_str, const char a_delim) {
     }
 
     return result;
+}
+
+void createFolder(char* username) {
+    std::string path(username);
+    path = DATA_PATH + path + "/";
+    if (!std::filesystem::exists(path)) {
+        std::filesystem::create_directories(path);
+    }
 }

@@ -9,6 +9,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <iostream>
+#include <string>
+
 #include "protocol.h"
 
 int client_sock;
@@ -113,7 +116,6 @@ int main(int argc, char *argv[]) {
             }
 
         } else {
-            printf("Hello %s\n", current_usr);
             printMainMenu();
             scanf(" %c", &choose);
             while (getchar() != '\n')
