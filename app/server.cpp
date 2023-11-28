@@ -14,6 +14,7 @@
 #include <string>
 
 #include "account.h"
+#include "file_tree.h"
 #include "protocol.h"
 #include "status.h"
 #include "utils.h"
@@ -40,7 +41,7 @@ void handleAuthenticateRequest(Message mess, int connSock);
  */
 void handleLogin(Message mess, int connSock);
 
-void handleUploadFile(Message mess, int connSock);
+void handleRequesetDirectory(Message msg, int connSock);
 
 /*
  * count number element in array with unknown size
@@ -128,8 +129,8 @@ void echo(int connfd) {
             case TYPE_AUTHENTICATE:
                 handleAuthenticateRequest(msg, connfd);
                 break;
-            case TYPE_UPLOAD_FILE:
-                // handleUploadFile(msg, connfd);
+            case TYPE_REQUEST_DIRECTORY:
+                handleRequesetDirectory(msg, connfd);
                 break;
             default:
                 break;
@@ -148,6 +149,21 @@ void handleAuthenticateRequest(Message mess, int connSock) {
     } else if (!strcmp(operation, "LOGOUT")) {
     } else if (!strcmp(operation, "REGISTER")) {
     }
+}
+
+void handleRequesetDirectory(Message msg, int connSock) {
+    std::string username(msg.payload);
+    std::string path = DATA_PATH + username + "/";
+    FileTree root(".");
+    root.populateFromDirectory(path);
+    std::string treeString = root.toString();
+    printf("%s\n", treeString.c_str());
+    Message *mess = (Message *) malloc(sizeof(Message));
+    mess->type = TYPE_OK;
+    mess->requestId = msg.requestId;
+    strcpy(mess->payload, treeString.c_str());
+    mess->length = strlen(mess->payload);
+    sendMessage(connSock, *mess);
 }
 
 void handleLogin(Message mess, int connSock) {

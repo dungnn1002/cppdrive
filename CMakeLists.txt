@@ -36,6 +36,7 @@ set(SOURCES          # All .cpp files in src/
     src/protocol.cpp
     src/utils.cpp
     src/status.cpp
+    src/file_tree.cpp
 )
 
 set(LIBRARY_NAME engine)  # Default name for the library built from src/*.cpp (change if you wish)
@@ -54,23 +55,18 @@ target_set_warnings(${LIBRARY_NAME} ENABLE ALL AS_ERROR ALL DISABLE Annoying)
 # target_compile_options(${LIBRARY_NAME} ... )  # For setting manually.
 
 
-# add_executable(server app/server.cpp)   # Name of exec. and location of file.
-# target_link_libraries(server PRIVATE ${LIBRARY_NAME})  # Link the executable to library (if it uses it).
-# target_set_warnings(server ENABLE ALL AS_ERROR ALL DISABLE Annoying) # Set warnings (if needed).
-# target_enable_lto(server optimized)  # enable link-time-optimization if available for non-debug configurations
-# add_executable(client app/client.cpp)   # Name of exec. and location of file.
-# target_link_libraries(client PRIVATE ${LIBRARY_NAME})  # Link the executable to library (if it uses it).
-# target_set_warnings(client ENABLE ALL AS_ERROR ALL DISABLE Annoying) # Set warnings (if needed).
-# target_enable_lto(client optimized) 
-
-add_executable(tree app/tree.cpp)   # Name of exec. and location of file.
-target_link_libraries(tree PRIVATE ${LIBRARY_NAME})  # Link the executable to library (if it uses it).
-target_set_warnings(tree ENABLE ALL AS_ERROR ALL DISABLE Annoying) # Set warnings (if needed).
-target_enable_lto(tree optimized) 
+add_executable(server app/server.cpp)   # Name of exec. and location of file.
+target_link_libraries(server PRIVATE ${LIBRARY_NAME})  # Link the executable to library (if it uses it).
+target_set_warnings(server ENABLE ALL AS_ERROR ALL DISABLE Annoying) # Set warnings (if needed).
+target_enable_lto(server optimized)  # enable link-time-optimization if available for non-debug configurations
+add_executable(client app/client.cpp)   # Name of exec. and location of file.
+target_link_libraries(client PRIVATE ${LIBRARY_NAME})  # Link the executable to library (if it uses it).
+target_set_warnings(client ENABLE ALL AS_ERROR ALL DISABLE Annoying) # Set warnings (if needed).
+target_enable_lto(client optimized) 
 
 # Set the properties you require, e.g. what C++ standard to use. Here applied to library and main (change as needed).
 set_target_properties(
-    ${LIBRARY_NAME} tree
+    ${LIBRARY_NAME} client server
       PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES

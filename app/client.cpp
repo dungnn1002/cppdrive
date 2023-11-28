@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 
+#include "file_tree.h"
 #include "protocol.h"
 
 int client_sock;
@@ -116,24 +117,19 @@ int main(int argc, char *argv[]) {
             }
 
         } else {
-            printMainMenu();
-            scanf(" %c", &choose);
+            memset(mess, 0, sizeof(Message));
+            mess->type = TYPE_REQUEST_DIRECTORY;
+            strcpy(mess->payload, current_usr);
+            mess->length = strlen(mess->payload);
+            sendMessage(client_sock, *mess);
+            receiveMessage(client_sock, mess);
+            std::string str_tree(mess->payload);
+            FileTree root(".");
+            root = root.parseTree(str_tree);
+            std::system("clear");
+            root.display();
             while (getchar() != '\n')
                 ;
-            switch (choose) {
-                case '1':
-                    printf("Upload file\n");
-                    break;
-                case '2':
-                    printf("Download file\n");
-                    break;
-                case '3':
-                    printf("Rename file\n");
-                    break;
-                case '7':
-                    isAuthen = false;
-                    break;
-            }
         }
     }
     // Step 5: Close socket
