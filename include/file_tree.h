@@ -9,6 +9,8 @@ class FileTree {
     std::string name;
     std::vector<FileTree> children;
 
+    FileTree();
+
     // Constructor to initialize with a name
     FileTree(const std::string &n);
 

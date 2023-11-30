@@ -12,8 +12,8 @@
 #include <iostream>
 #include <string>
 
-#include "file_tree.h"
 #include "protocol.h"
+#include "terminal.h"
 
 int client_sock;
 bool isAuthen = false;
@@ -117,19 +117,51 @@ int main(int argc, char *argv[]) {
             }
 
         } else {
-            memset(mess, 0, sizeof(Message));
-            mess->type = TYPE_REQUEST_DIRECTORY;
-            strcpy(mess->payload, current_usr);
-            mess->length = strlen(mess->payload);
-            sendMessage(client_sock, *mess);
-            receiveMessage(client_sock, mess);
-            std::string str_tree(mess->payload);
-            FileTree root(".");
-            root = root.parseTree(str_tree);
+            Message msg;
+            msg.type = TYPE_REQUEST_DIRECTORY;
+            strcpy(msg.payload, current_usr);
+            msg.length = strlen(msg.payload);
+            sendMessage(client_sock, msg);
+
+            std::string str_tree = "";
+            while (true) {
+                receiveMessage(client_sock, &msg);
+                if (msg.length > 0) {
+                    std::string payload(msg.payload);
+                    str_tree += payload;
+                } else {
+                    break;
+                }
+            }
             std::system("clear");
-            root.display();
-            while (getchar() != '\n')
-                ;
+            Terminal terminal(str_tree);
+            std::string current_path = " ~";
+            while (true) {
+                std::cout << current_usr << "@cpp_drive:" << current_path << " $ ";
+                std::string command;
+                std::getline(std::cin, command);
+                if (command == "clear") {
+                    std::system("clear");
+                    continue;
+                }
+                if (command == "reset") {
+                    break;
+                }
+                if (command == "ls") {
+                    terminal.ls();
+                }
+                if (command.substr(0, 2) == "cd") {
+                    std::string arg = command.substr(3);
+                    if (arg == "~") {
+                        current_path = " ~";
+                        terminal.resetCurrentDirectory();
+                        continue;
+                    }
+                    if (terminal.cd(arg)) {
+                        current_path += "/" + arg;
+                    }
+                }
+            }
         }
     }
     // Step 5: Close socket

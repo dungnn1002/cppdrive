@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 
+FileTree::FileTree() : name("") {}
+
 // Constructor to initialize with a name
 FileTree::FileTree(const std::string &n) : name(n) {}
 
@@ -54,11 +56,14 @@ void FileTree::display(int depth) const {
     for (int i = 0; i < depth; ++i) {
         std::cout << "  ";   // Adjust indentation based on depth
     }
-    std::cout << "├── " << name << std::endl;
-
     // Display children recursively
     for (const auto &child : children) {
-        child.display(depth + 1);
+        if (child.children.size() > 0) {
+            std::cout << "\033[1;34m" << child.name << "\033[0m"
+                      << "/" << std::endl;
+        } else {
+            std::cout << child.name << std::endl;
+        }
     }
 }
 

@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include <filesystem>
+#include <iostream>
 #include <string>
 
 #include "account.h"
@@ -157,13 +158,26 @@ void handleRequesetDirectory(Message msg, int connSock) {
     FileTree root(".");
     root.populateFromDirectory(path);
     std::string treeString = root.toString();
-    printf("%s\n", treeString.c_str());
-    Message *mess = (Message *) malloc(sizeof(Message));
-    mess->type = TYPE_OK;
-    mess->requestId = msg.requestId;
-    strcpy(mess->payload, treeString.c_str());
-    mess->length = strlen(mess->payload);
-    sendMessage(connSock, *mess);
+    int size = treeString.length();
+    Message mess;
+    mess.type = TYPE_OK;
+    mess.requestId = msg.requestId;
+    int byteSent = 0;
+    while (byteSent < size) {
+        if (PAYLOAD_SIZE <= size - byteSent) {
+            memcpy(mess.payload, treeString.c_str() + byteSent, PAYLOAD_SIZE);
+            mess.length = strlen(mess.payload);
+            sendMessage(connSock, mess);
+            byteSent += PAYLOAD_SIZE;
+        } else {
+            memcpy(mess.payload, treeString.c_str() + byteSent, PAYLOAD_SIZE);
+            mess.length = strlen(mess.payload);
+            sendMessage(connSock, mess);
+            byteSent += size - byteSent;
+        }
+    }
+    mess.length = 0;
+    sendMessage(connSock, mess);
 }
 
 void handleLogin(Message mess, int connSock) {

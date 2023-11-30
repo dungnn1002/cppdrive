@@ -37,6 +37,7 @@ set(SOURCES          # All .cpp files in src/
     src/utils.cpp
     src/status.cpp
     src/file_tree.cpp
+    src/terminal.cpp
 )
 
 set(LIBRARY_NAME engine)  # Default name for the library built from src/*.cpp (change if you wish)
