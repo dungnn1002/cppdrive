@@ -13,6 +13,7 @@
 #include <string>
 
 #include "protocol.h"
+#include "terminal.h"
 
 int client_sock;
 bool isAuthen = false;
@@ -116,23 +117,50 @@ int main(int argc, char *argv[]) {
             }
 
         } else {
-            printMainMenu();
-            scanf(" %c", &choose);
-            while (getchar() != '\n')
-                ;
-            switch (choose) {
-                case '1':
-                    printf("Upload file\n");
+            Message msg;
+            msg.type = TYPE_REQUEST_DIRECTORY;
+            strcpy(msg.payload, current_usr);
+            msg.length = strlen(msg.payload);
+            sendMessage(client_sock, msg);
+
+            std::string str_tree = "";
+            while (true) {
+                receiveMessage(client_sock, &msg);
+                if (msg.length > 0) {
+                    std::string payload(msg.payload);
+                    str_tree += payload;
+                } else {
                     break;
-                case '2':
-                    printf("Download file\n");
+                }
+            }
+            std::system("clear");
+            Terminal terminal(str_tree);
+            std::string current_path = " ~";
+            while (true) {
+                std::cout << current_usr << "@cpp_drive:" << current_path << " $ ";
+                std::string command;
+                std::getline(std::cin, command);
+                if (command == "clear") {
+                    std::system("clear");
+                    continue;
+                }
+                if (command == "reset") {
                     break;
-                case '3':
-                    printf("Rename file\n");
-                    break;
-                case '7':
-                    isAuthen = false;
-                    break;
+                }
+                if (command == "ls") {
+                    terminal.ls();
+                }
+                if (command.substr(0, 2) == "cd") {
+                    std::string arg = command.substr(3);
+                    if (arg == "~") {
+                        current_path = " ~";
+                        terminal.resetCurrentDirectory();
+                        continue;
+                    }
+                    if (terminal.cd(arg)) {
+                        current_path += "/" + arg;
+                    }
+                }
             }
         }
     }
