@@ -140,26 +140,29 @@ int main(int argc, char *argv[]) {
                 std::cout << current_usr << "@cpp_drive:" << current_path << " $ ";
                 std::string command;
                 std::getline(std::cin, command);
-                if (command == "clear") {
-                    std::system("clear");
-                    continue;
-                }
-                if (command == "reset") {
-                    break;
-                }
-                if (command == "ls") {
-                    terminal.ls();
-                }
-                if (command.substr(0, 2) == "cd") {
-                    std::string arg = command.substr(3);
-                    if (arg == "~") {
-                        current_path = " ~";
-                        terminal.resetCurrentDirectory();
-                        continue;
-                    }
-                    if (terminal.cd(arg)) {
-                        current_path += "/" + arg;
-                    }
+                Command parsedCommand = parseCommand(command);
+                switch (parsedCommand.command) {
+                    case COMMAND::LS:
+                        terminal.ls();
+                        break;
+                    case COMMAND::CD:
+                        if (parsedCommand.argument[1] == "..") {
+                            current_path = " ~";
+                            terminal.resetCurrentDirectory();
+                            continue;
+                        }
+                        if (terminal.cd(parsedCommand.argument[1])) {
+                            current_path += "/" + parsedCommand.argument[1];
+                        }
+                        break;
+                    case COMMAND::UPLOAD:
+                        break;
+                    case COMMAND::DOWNLOAD:
+                        break;
+                    case COMMAND::EXIT:
+                        break;
+                    case COMMAND::INVALID:
+                        break;
                 }
             }
         }

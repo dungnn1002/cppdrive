@@ -1,7 +1,18 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
+#include <vector>
+
 #include "file_tree.h"
+
+enum class COMMAND { LS, CD, UPLOAD, DOWNLOAD, EXIT, INVALID };
+
+struct Command {
+    COMMAND command;
+    std::vector<std::string> argument;
+};
+
+struct Command parseCommand(const std::string &command);
 
 class Terminal {
    public:
