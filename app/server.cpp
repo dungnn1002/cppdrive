@@ -23,7 +23,7 @@
 #define BACKLOG  20 /* Number of allowed connections */
 #define FILENAME "../account.txt"
 
-Account account_list = NULL;
+std::vector<Account> account_list;
 
 /* Receive and echo message to client */
 void echo(int);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         printf("Error: %s\n", errno == EINVAL ? "invalid base" : "invalid input");
         return 0;
     }
-    account_list = read_account(FILENAME);
+    account_list = readFile(FILENAME);
 
     int listenfd, connfd;
     struct sockaddr_in server; /* server's address information */
@@ -198,8 +198,7 @@ void handleLogin(Message mess, int connSock) {
                 char password[20];
                 strcpy(username, userStr[1]);
                 strcpy(password, passStr[1]);
-                int fl = process_login(account_list, username, password);
-                if (fl != VALID_CREDENTIALS) {
+                if (!process_login(account_list,username,password)) {
                     mess.type = TYPE_ERROR;
                     status = USERNAME_OR_PASSWORD_INVALID;
                 } else {
